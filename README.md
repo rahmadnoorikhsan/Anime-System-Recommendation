@@ -114,7 +114,115 @@ Distribusi  rating menggambarkan seberapa aktif setiap pengguna dalam memberikan
 Distribusi user rating menunjukkan bahwa **rating -1 (18,9%)** mendominasi sebagai nilai tertinggi kedua, menandakan banyak pengguna menonton tanpa memberikan rating. **Rating 8 (21,1%)** adalah nilai yang paling sering diberikan, diikuti rating 7, 9, dan 10, yang menunjukkan kecenderungan memberi nilai tinggi. Rating rendah (1–4) sangat jarang, hanya **kurang dari 2,5%,** memperlihatkan bias positif pengguna.
 
 ## Data Preparation
+Data preparation merupakan proses penting yang dilakukan sebelum masuk ke tahap analisis atau pemodelan. Tujuannya adalah memastikan bahwa data yang digunakan dalam kondisi bersih, konsisten, dan siap digunakan. Berikut ini adalah tahapan-tahapan data preparation yang diterapkan dalam proyek ini:
 
+### Pengurutan Dataset
+Langkah pertama dalam persiapan data adalah mengurutkan dataset animes berdasarkan kolom anime_id dan dataset ratings berdasarkan kolom user_id. Pengurutan ini tidak memengaruhi isi data, namun berguna untuk menjaga keteraturan dan mempermudah proses integrasi antar dataset.
+```python
+animes_df = animes.sort_values('anime_id')
+ratings_df = ratings.sort_values('user_id')
+```
+
+### Penyesuaian Nama Kolom
+Jika diperhatikan pada tahapan EDA, dataset `animes` dan `ratings` sama-sama memiliki kolom bernama rating. Untuk menghindari konflik dan kebingungan saat proses penggabungan, kolom rating pada dataset animes diubah menjadi official_rating.
+```python
+animes_df.rename(columns={"rating": "official_rating"}, inplace=True)
+```
+
+### Penggabungan Dataset
+Dataset `animes_df` dan `ratings_df` kemudian digabungkan menggunakan teknik inner join berdasarkan kolom `anime_id`. Hasil penggabungan ini menghasilkan dataset baru yang berisi informasi lengkap mengenai anime dan rating yang diberikan oleh masing-masing pengguna.
+```python
+full_anime_data = pd.merge(ratings_df, animes_df, on="anime_id", how='inner')
+```
+
+Setelah dilakukan penggabungan dataset, terdapat **7.813.727 data** dan **9 kolom**. Dengan tampilan seperti berikut
+| user\_id | anime\_id | rating | name                              | genre                                                   | type  | episodes | official\_rating | members |
+| -------- | --------- | ------ | --------------------------------- | ------------------------------------------------------- | ----- | -------- | ---------------- | ------- |
+| 1        | 936       | -1     | Naruto Movie 2: Dai Gekitotsu!... | Adventure, Comedy, Drama, Fantasy, Shounen, Super Power | Movie | 1        | 6.99             | 97,308  |
+| 1        | 20        | -1     | Naruto                            | Action, Comedy, Martial Arts, Shounen, Super Power      | TV    | 220      | 7.81             | 683,297 |
+| 1        | 4744      | -1     | Akaneiro ni Somaru Saka           | Comedy, Harem, Romance, School                          | TV    | 12       | 6.69             | 91,453  |
+| 1        | 4581      | -1     | Shikabane Hime: Aka               | Action, Horror, Martial Arts                            | TV    | 13       | 7.38             | 71,502  |
+| 1        | 4224      | -1     | Toradora!                         | Comedy, Romance, School, Slice of Life                  | TV    | 25       | 8.45             | 633,817 |
+
+### Menangani Anomali Nilai Rating
+Dalam dataset `ratings`, nilai -1 pada kolom `rating` menunjukkan bahwa pengguna telah menonton anime namun tidak memberikan rating eksplisit. Nilai ini dianggap sebagai anomali dan diubah menjadi NaN (missing value) agar tidak disalahartikan sebagai rating valid.
+```python
+full_anime_clean_data = full_anime_data.copy()
+
+full_anime_clean_data.replace({"rating": -1}, np.nan, inplace=True)
+```
+
+### Menangani Missing Value
+Setelah mengganti nilai -1 menjadi NaN, dilakukan pengecekan terhadap seluruh kolom untuk mengetahui keberadaan missing values. Kolom-kolom yang mengandung nilai kosong seperti rating, genre, type, dan official_rating kemudian dibersihkan dengan metode dropna().
+| Nama Kolom        | Jumlah Missing Value |
+| ----------------- | -------------------- | 
+| user_id           | 0                    | 
+| anime_id          | 0                    | 
+| rating            | 1.476.488            | 
+| name              | 0                    | 
+| genre             | 110                  | 
+| type              | 4                    | 
+| episodes          | 0                    | 
+| official_rating   | 6                    | 
+| members           | 0                    | 
+
+```python
+full_anime_clean_data = full_anime_clean_data.dropna()
+```
+
+Setelah melakukan drop pada missing values, saat ini dataset memiliki **6.337.146 data**
+
+### Menangani Duplikasi Data
+Tahapan terakhir adalah memastikan bahwa tidak terdapat data yang duplikat. Duplikasi dapat memengaruhi hasil analisis atau model karena memberi bobot lebih pada data yang berulang. Setelah dicek, ditemukan **satu baris data** yang duplikat dan langsung dihapus.
+
+```python
+full_anime_clean_data = full_anime_clean_data.drop_duplicates()
+```
+
+Setelah menghapus data duplikat, dataset akhir yang bersih terdiri dari **6.337.145 baris data** dan telah siap digunakan untuk proses analisis lebih lanjut, termasuk dalam pengembangan sistem rekomendasi. Perlu dicatat bahwa setiap metode pemodelan memiliki karakteristik dan kebutuhan data yang berbeda, sehingga tahapan data preparation dapat mengalami penyesuaian sesuai dengan pendekatan yang digunakan.
+
+## Data Preparation untuk Content-Based Filtering
+Pada bagian ini, proses persiapan data difokuskan untuk memenuhi kebutuhan metode Content-Based Filtering yang akan digunakan untuk menghitung kemiripan antar item, khususnya pada kolom `genre` guna membangun profil item yang akan digunakan dalam sistem rekomendasi.
+
+### Penghapusan Duplikat Berdasarkan Nama Anime
+Untuk memastikan setiap anime unik, data duplikat berdasarkan kolom name dihapus.
+```python
+df_content_based = full_anime_clean_data.copy()
+df_content_based.drop_duplicates(subset="name", keep="first", inplace=True)
+df_content_based.reset_index(drop=True, inplace=True)
+```
+### Pemformatan Kolom Genre
+Kolom `genre` yang berisi beberapa genre dalam satu string dipisah menjadi list agar dapat diproses oleh model.
+```python
+genres = df_content_based["genre"].str.split(", | , | ,").astype(str)
+```
+
+### Ekstraksi Fitur dengan TF-IDF
+TF-IDF (Term Frequency - Inverse Document Frequency) digunakan untuk mengubah data genre menjadi representasi numerik. Hal ini memudahkan model dalam menghitung kemiripan antar anime berdasarkan fitur genre.
+
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+tf_idf_content_based = TfidfVectorizer(
+    min_df=3,
+    max_features=None,
+    strip_accents="unicode",
+    analyzer="word",
+    token_pattern=r"\w{1,}",
+    ngram_range=(1, 3),
+    stop_words="english"
+)
+
+tf_matrix_content_based = tf_idf_content_based.fit_transform(genres)
+```
+Matriks TF-IDF ini memiliki **9.892 baris (jumlah anime unik)** dan **1.480 kolom (fitur unik hasil tokenisasi)**.
+
+### Konversi Matriks TF-IDF ke Bentuk Dense
+Matriks hasil TF-IDF diubah menjadi bentuk dense matrix agar mudah dianalisis atau diolah dalam tahap berikutnya.
+```python
+tf_matrix_dense = tf_matrix_content_based.todense()
+```
+## Data Preparation untuk Collaborative Filtering
 ## Modeling
 
 ## Evaluation
