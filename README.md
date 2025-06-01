@@ -418,6 +418,6 @@ anime_recommendations('Naruto')
 | Kyutai Panic Adventure!                                                                   | Action, Martial Arts, Shounen, Super Power         |
 | Ben-To                                                                                    | Action, Comedy, Martial Arts                       |
 
-Dari hasil yang ditampilkan menunjukkan beberapa judul anime yang memiliki genre serupa dengan Naruto. Ini mengindikasikan bahwa sistem rekomendasi telah berhasil bekerja dengan baik. Judul-judul yang muncul dalam daftar rekomendasi umumnya juga bergenre Action, Shounen, atau Martial Arts, yang merupakan ciri khas dari anime Naruto itu sendiri.
+Dari hasil yang ditampilkan menunjukkan beberapa judul anime yang memiliki genre serupa dengan Naruto. Ini mengindikasikan bahwa sistem rekomendasi telah berhasil bekerja dengan baik. Judul-judul yang muncul dalam daftar rekomendasi umumnya juga bergenre Action, Comedy, Martial Arts, Shounen, atau Super Power yang merupakan ciri khas dari anime Naruto itu sendiri.
 
 ## Evaluation
