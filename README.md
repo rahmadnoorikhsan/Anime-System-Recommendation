@@ -420,4 +420,266 @@ anime_recommendations('Naruto')
 
 Dari hasil yang ditampilkan menunjukkan beberapa judul anime yang memiliki genre serupa dengan Naruto. Ini mengindikasikan bahwa sistem rekomendasi telah berhasil bekerja dengan baik. Judul-judul yang muncul dalam daftar rekomendasi umumnya juga bergenre Action, Comedy, Martial Arts, Shounen, atau Super Power yang merupakan ciri khas dari anime Naruto itu sendiri.
 
+### Collaborative Filtering
+Pada tahap modeling ini, sistem rekomendasi dibangun dengan pendekatan Collaborative Filtering menggunakan teknik embedding untuk merepresentasikan hubungan antara pengguna dan anime.
+
+Model dikembangkan menggunakan API dari TensorFlow, dengan mendefinisikan kelas `RecommenderNet`. Model ini terdiri atas:
+
+- **User Embedding**: Untuk merepresentasikan preferensi masing-masing pengguna.
+
+- **Anime Embedding**: Untuk merepresentasikan karakteristik tiap anime.
+
+- **User Bias dan Anime Bias**: Untuk memperhitungkan kecenderungan rating pengguna atau popularitas anime tertentu.
+
+- **Dot Product**: Digunakan untuk menghitung skor kecocokan antara pengguna dan anime.
+
+- **Sigmoid Activation**: Digunakan untuk menormalkan skor ke dalam skala [0, 1].
+
+Berikut merupakan implementasi arsitektur modelnya.
+
+```python
+class RecommenderNet(Model):
+    def __init__(self, num_users, num_anime, embedding_size, **kwargs):
+        super(RecommenderNet, self).__init__(**kwargs)
+        self.user_embedding = Embedding(num_users, embedding_size, embeddings_initializer='he_normal', embeddings_regularizer=l2(1e-6))
+        self.user_bias = Embedding(num_users, 1)
+        self.anime_embedding = Embedding(num_anime, embedding_size, embeddings_initializer='he_normal', embeddings_regularizer=l2(1e-6))
+        self.anime_bias = Embedding(num_anime, 1)
+
+    def call(self, inputs):
+        user_vector = self.user_embedding(inputs[:, 0])
+        user_bias = self.user_bias(inputs[:, 0])
+        anime_vector = self.anime_embedding(inputs[:, 1])
+        anime_bias = self.anime_bias(inputs[:, 1])
+
+        dot_user_anime = tf.tensordot(user_vector, anime_vector, 2)
+        x = dot_user_anime + user_bias + anime_bias
+        return tf.nn.sigmoid(x)
+```
+
+Selanjutnya Model dikompilasi dengan parameter sebagai berikut:
+
+- **Loss Function**: Binary Crossentropy
+
+- **Optimizer**: Adam dengan learning rate 0.001
+
+- **Metrics**: Root Mean Squared Error (RMSE)
+
+```python
+model = RecommenderNet(total_users, total_animes, 50)
+model.compile(
+    loss=BinaryCrossentropy(),
+    optimizer=Adam(learning_rate=0.001),
+    metrics=[RootMeanSquaredError()]
+)
+```
+
+Untuk proses pelatihan, digunakan parameter:
+
+- **batch_size** = 16
+
+- **epochs** = 50
+
+- **validation_data** = (x_val, y_val)
+
+- **verbose** = 1
+
+Callback EarlyStopping juga digunakan untuk menghentikan pelatihan jika tidak ada peningkatan performa model selama 10 epoch berturut-turut.
+
+```python
+callbacks = EarlyStopping(
+    min_delta=0.0001,
+    patience=10,
+    restore_best_weights=True,
+)
+
+history = model.fit(
+    x=x_train,
+    y=y_train,
+    batch_size=16,
+    epochs=50,
+    validation_data=(x_val, y_val),
+    verbose=1,
+    callbacks=[callbacks]
+)
+```
+Setelah melakukan training pada model, selanjutnya adalah melakukan pengujian. Pengujian dilakukan untuk mengevaluasi kemampuan model dalam memberikan rekomendasi anime berdasarkan pola preferensi pengguna. Dalam pengujian ini, sistem akan memilih secara acak satu pengguna dari dataset, lalu memprediksi skor kecocokan untuk semua anime yang belum ditonton oleh pengguna tersebut.
+
+Langkah-langkah yang dilakukan dalam melakukan pengujian adalah sebagai berikut : 
+- Ambil satu ID pengguna secara acak.
+
+- Identifikasi anime yang telah dan belum ditonton oleh pengguna.
+
+- Prediksi skor rating terhadap semua anime yang belum ditonton.
+
+- Mengambil 10 anime dengan skor tertinggi sebagai rekomendasi.
+
+- Menampilkan hasil rekomendasi dan anime favorit sebelumnya dari pengguna.
+
+Hasilnya, sistem menampilkan:
+
+- Top-5 anime favorit pengguna berdasarkan rating tertinggi yang telah diberikan.
+
+- Top-10 rekomendasi anime terbaik yang diprediksi cocok untuk pengguna.
+
+```python
+Rekomendasi Anime untuk Pengguna dengan ID: 47849
+
+--------------------------------------------------------------------------------
+Anime dengan rating tertinggi untuk pengguna:
+--------------------------------------------------------------------------------
+Hikaru no Go : Comedy, Game, Shounen, Supernatural
+Toaru Kagaku no Railgun : Action, Sci-Fi, Super Power
+Sono Hanabira ni Kuchizuke wo: Anata to Koibito Tsunagi : Hentai, School, Yuri
+Himouto! Umaru-chan : Comedy, School, Seinen, Slice of Life
+Haikyuu!! Second Season : Comedy, Drama, School, Shounen, Sports
+
+--------------------------------------------------------------------------------
+Rekomendasi 10 Anime Terbaik:
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 1
+Nama Anime  : Neon Genesis Evangelion: The End of Evangelion
+Genre      : Dementia, Drama, Mecha, Psychological, Sci-Fi
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 2
+Nama Anime  : Kanon (2006)
+Genre      : Drama, Romance, Slice of Life, Supernatural
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 3
+Nama Anime  : Tengen Toppa Gurren Lagann
+Genre      : Action, Adventure, Comedy, Mecha, Sci-Fi
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 4
+Nama Anime  : Evangelion: 2.0 You Can (Not) Advance
+Genre      : Action, Mecha, Sci-Fi
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 5
+Nama Anime  : Clannad: After Story
+Genre      : Drama, Fantasy, Romance, Slice of Life, Supernatural
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 6
+Nama Anime  : Kara no Kyoukai 7: Satsujin Kousatsu (Kou)
+Genre      : Action, Mystery, Romance, Supernatural, Thriller
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 7
+Nama Anime  : Summer Wars
+Genre      : Comedy, Sci-Fi
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 8
+Nama Anime  : Suzumiya Haruhi no Shoushitsu
+Genre      : Comedy, Mystery, Romance, School, Sci-Fi, Supernatural
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 9
+Nama Anime  : Mawaru Penguindrum
+Genre      : Comedy, Drama, Mystery, Psychological
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+No         : 10
+Nama Anime  : Ookami Kodomo no Ame to Yuki
+Genre      : Fantasy, Slice of Life
+--------------------------------------------------------------------------------
+```
 ## Evaluation
+
+### Content-Based Filtering
+Pada tahap ini, dilakukan proses evaluasi untuk mengukur performa sistem rekomendasi yang telah dikembangkan. Evaluasi difokuskan pada kemampuan sistem dalam memberikan rekomendasi anime yang relevan terhadap preferensi pengguna, khususnya pengguna yang menyukai anime Naruto. Hal ini dilakukan dengan mengukur sejauh mana model mampu mengidentifikasi dan mengurutkan anime dengan genre yang serupa dengan Naruto, yaitu Action, Comedy, Martial Arts, Shounen, dan Super Power.
+
+Untuk mengevaluasi kualitas rekomendasi, digunakan metrik evaluasi berbasis Top-K relevance, yaitu:
+
+#### 1. Precision@K
+  
+Precision@K mengukur proporsi item yang direkomendasikan di antara Top-K yang benar-benar relevan.
+
+**Rumus:**
+
+$$
+\text{Precision@K} = \frac{|\text{Relevant Items in Top-K}|}{K}
+$$
+
+**Penjelasan:**
+
+- *Relevant Items in Top-K*: Jumlah item relevan dalam daftar rekomendasi sebanyak *K* teratas.
+- *K*: Jumlah rekomendasi yang dievaluasi.
+
+#### 2. Recall@K
+Recall@K mengukur sejauh mana sistem berhasil menemukan item-item relevan dari seluruh item yang relevan.
+**Rumus:**
+
+$$
+\text{Recall@K} = \frac{|\text{Relevant Items in Top-K}|}{|\text{All Relevant Items}|}
+$$
+
+**Penjelasan:**
+
+- *All Relevant Items*: Jumlah keseluruhan item relevan dalam ground truth.
+- *Relevant Items in Top-K*: Item relevan yang muncul dalam Top-K hasil rekomendasi.
+#### 3. Normalized Discounted Cumulative Gain (NDCG@K)
+NDCG@K tidak hanya memperhatikan apakah item relevan masuk dalam rekomendasi, tetapi juga memperhatikan posisi kemunculannya dalam daftar. Semakin tinggi posisi item relevan, semakin besar kontribusinya terhadap skor.
+**Rumus:**
+
+$$
+\text{NDCG@K} = \frac{DCG@K}{IDCG@K}
+$$
+
+**Penjelasan:**
+
+- *DCG@K*: Skor DCG dari urutan rekomendasi aktual.
+- *IDCG@K*: Skor DCG maksimum yang bisa dicapai jika semua item relevan berada di posisi teratas (urutan ideal).
+- Nilai NDCG berada antara 0 dan 1, di mana 1 berarti rekomendasi sempurna.
+
+Ketiga metrik ini dipilih karena sesuai dengan konteks sistem rekomendasi yang berfokus pada urutan rekomendasi terbaik berdasarkan relevansi, bukan pada nilai rating numerik semata. Metrik ini sangat relevan untuk menilai apakah sistem mampu menyarankan item yang relevan di antara Top-K pilihan teratas.
+
+Evaluasi dilakukan menggunakan data ground truth yang disaring berdasarkan anime yang memiliki kelima genre utama yang identik dengan anime Naruto. Daftar ini diasumsikan sebagai item paling ideal untuk direkomendasikan kepada pengguna dengan preferensi serupa.
+
+Hasil evaluasi Top-10 rekomendasi terhadap pengguna yang menyukai anime Naruto adalah sebagai berikut:
+![Evaluation Model Content-Based Filtering](https://raw.githubusercontent.com/rahmadnoorikhsan/Anime-System-Recommendation/main/resource/evaluation-content-based.png)
+
+- **Precision@10 sebesar 70%** menunjukkan bahwa sebagian besar rekomendasi yang dihasilkan sistem sudah tepat sasaran. Hal ini membuktikan bahwa sistem cukup andal dalam memilih item relevan.
+
+- **Recall@10 sebesar 33%** mengindikasikan bahwa meskipun sistem belum mencakup semua item relevan dari seluruh daftar ground truth, namun performa dalam menemukan sebagian besar rekomendasi terbaik masih dapat diterima untuk konteks rekomendasi Top-K.
+
+- **NDCG@10 sebesar 80%** menjadi bukti bahwa sistem tidak hanya memberikan anime yang relevan, namun juga mengurutkannya secara optimal. Ini penting karena pengguna cenderung melihat rekomendasi pada posisi atas terlebih dahulu.
+
+### Collaborative Filtering
+Pada tahap ini, dilakukan evaluasi untuk mengukur performa sistem rekomendasi berbasis Collaborative Filtering. Berbeda dengan pendekatan Content-Based Filtering yang mengandalkan kemiripan fitur antar item, Collaborative Filtering memanfaatkan pola interaksi antar pengguna untuk memberikan rekomendasi.
+
+Evaluasi dilakukan dengan fokus pada seberapa baik model dalam memprediksi rating pengguna terhadap anime, yang nantinya digunakan sebagai dasar pemeringkatan dan rekomendasi. Metrik utama yang digunakan adalah **Root Mean Squared Error (RMSE)** karena pendekatan ini bersifat prediktif terhadap nilai rating.
+
+RMSE mengukur seberapa besar rata-rata kesalahan kuadrat dari prediksi terhadap nilai aktual. Nilai RMSE yang lebih rendah menunjukkan bahwa model memiliki prediksi yang lebih akurat.
+
+**Rumus:**
+
+$$
+\text{RMSE} = \sqrt{ \frac{1}{N} \sum_{i=1}^{N} (\hat{r}_i - r_i)^2 }
+$$
+
+**Penjelasan:**
+
+- $$\( \hat{r}_i \)$$: Rating yang diprediksi oleh model.
+- $$\( r_i \)$$: Rating aktual dari pengguna.
+- $$\( N \)$$: Jumlah total prediksi yang dievaluasi.
+
+Berikut ini merupakan hasil training yang divisualisasikan pada grafik berikut:
+
+![Evaluation Model Collaborative Filtering](https://raw.githubusercontent.com/rahmadnoorikhsan/Anime-System-Recommendation/main/resource/evaluation-collaborative.png)
+
+Dari grafik tersebut, dapat disimpulkan bahwa model menunjukkan konvergensi yang baik. Setelah melalui proses pelatihan hingga epoch ke-25, diperoleh hasil sebagai berikut:
+
+- **RMSE pada data pelatihan** stabil di kisaran **0.126**.
+- **RMSE pada data validasi** stabil di kisaran **0.133**.
+
+Nilai yang rendah dan stabil ini menunjukkan bahwa model memiliki tingkat generalisasi yang baik serta tidak mengalami overfitting secara signifikan. Dengan demikian, sistem rekomendasi berbasis Collaborative Filtering yang dibangun mampu memberikan prediksi rating yang cukup akurat untuk digunakan dalam menyusun rekomendasi bagi pengguna.
+
+## Referensi
+- Statista. (2021). Anime market size in Japan from 2002 to 2021. Retrieved from https://www.statista.com/statistics/1109105/japan-anime-market-size
+- Soni, B., Thakuria, D., Nath, N., Das, N., & Boro, B. (2021). RikoNet: A Novel Anime Recommendation Engine. arXiv preprint arXiv:2106.12970. Retrieved from https://arxiv.org/abs/2106.12970
+  
