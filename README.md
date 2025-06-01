@@ -222,7 +222,202 @@ Matriks hasil TF-IDF diubah menjadi bentuk dense matrix agar mudah dianalisis at
 ```python
 tf_matrix_dense = tf_matrix_content_based.todense()
 ```
+
+Dengan proses ini, data telah siap untuk digunakan dalam pelatihan model Content-Based Filtering yang akan dibahas pada tahap Modelling.
+
 ## Data Preparation untuk Collaborative Filtering
-## Modeling
+Sebelum membangun model Collaborative Filtering, dilakukan tahap persiapan data untuk memastikan bahwa data yang digunakan bersih, optimal, dan sesuai dengan kebutuhan algoritma. Proses ini mencakup penyaringan terhadap user dan anime yang paling aktif maupun populer, serta proses encoding untuk mengonversi ID menjadi format numerik.
+
+### Penyaringan User Teraktif dan Anime Terpopuler
+Dataset awal berukuran sangat besar dan mengandung banyak entri dengan sedikit interaksi. Hal ini dapat mempengaruhi efisiensi dan performa model. Oleh karena itu, dilakukan penyaringan dengan kriteria sebagai berikut:
+
+- Memilih 100 pengguna dengan jumlah rating terbanyak.
+
+- Memilih 500 anime yang memiliki rating terbanyak dari pengguna yang telah difilter.
+
+Langkah ini mampu mengurangi kompleksitas data, mempercepat proses pelatihan model, dan tetap mempertahankan pola interaksi yang representatif.
+
+```python
+# Membuat salinan dataset untuk Collaborative Filtering
+df_collab = full_anime_clean_data.copy()
+
+# Memilih 100 user paling aktif berdasarkan jumlah rating
+top_n_users = df_collab["user_id"].value_counts().index[:100]
+df_collab = df_collab[df_collab["user_id"].isin(top_n_users)]
+
+# Memilih 500 anime terpopuler berdasarkan jumlah rating
+top_m_anime = df_collab["name"].value_counts().index[:500]
+df_collab = df_collab[df_collab["name"].isin(top_m_anime)]
+
+# Menampilkan jumlah data hasil filter
+print("Jumlah data setelah filtering:", len(df_collab))
+```
+Hasil penyaringan ini menghasilkan **34.501 baris data**, yang mencerminkan interaksi antara **100 user teraktif dan 500 anime terpopuler.
+
+### Encoding anime_id dan user_id
+Langkah selanjutnya adalah melakukan encoding pada atribut `anime_id` dan `user_id` agar data dapat digunakan dalam algoritma Collaborative Filtering berbasis matrix factorization. Encoding ini mengubah setiap ID menjadi angka urut yang dimulai dari 0.
+
+```python
+# Mengambil daftar unik dari anime_id dan user_id
+anime_ids = df_collab['anime_id'].unique().tolist()
+user_ids = df_collab['user_id'].unique().tolist()
+
+# Melakukan encoding anime_id dan user_id
+anime_to_anime_encoded = {x: i for i, x in enumerate(anime_ids)}
+user_to_user_encoded = {x: i for i, x in enumerate(user_ids)}
+
+# Reverse dictionary
+anime_encoded_to_anime = {i: x for x, i in anime_to_anime_encoded.items()}
+user_encoded_to_user = {i: x for x, i in user_to_user_encoded.items()}
+
+# Menambahkan kolom hasil encoding ke dalam dataframe
+df_collab['anime'] = df_collab['anime_id'].map(anime_to_anime_encoded)
+df_collab['user'] = df_collab['user_id'].map(user_to_user_encoded)
+```
+
+Proses ini menghasilkan dua kolom baru, yaitu user dan anime, yang merepresentasikan hasil transformasi numerik dari user_id dan anime_id. Data ini akan menjadi input utama pada proses pelatihan model Collaborative Filtering di tahap selanjutnya.
+
+### Pembagian Data untuk Training dan Validasi
+Setelah proses encoding selesai, tahap selanjutnya adalah membagi data menjadi bagian training dan validasi. Hal ini bertujuan untuk mempersiapkan data agar dapat digunakan pada proses pelatihan dan evaluasi model Collaborative Filtering, serta untuk menghindari overfitting terhadap data pelatihan.
+
+#### Pengacakan Dataset
+Sebelum data dibagi, dilakukan proses pengacakan guna memastikan distribusi data lebih merata dan tidak mengikuti urutan aslinya yang dapat menyebabkan bias dalam proses pelatihan.
+
+```python
+df_collab = df_collab.sample(frac=1, random_state=42)
+```
+
+#### Membentuk Input (x) dan Target (y)
+
+Untuk membentuk data input dan target, diperlukan beberapa langkah penyesuaian:
+
+- Variabel `x` dibentuk dari pasangan user dan anime, masing-masing sudah dalam bentuk numerik hasil encoding. Kombinasi ini akan menjadi input bagi model.
+
+- Variabel `y` merupakan nilai rating yang telah dinormalisasi ke dalam skala 0 hingga 1, menggunakan rumus:
+
+$$
+\text{rating\_scaled} = \frac{\text{rating} - \text{min\_rating}}{\text{max\_rating} - \text{min\_rating}}
+$$
+
+Tujuannya adalah menyederhanakan rentang nilai target untuk mempercepat konvergensi saat pelatihan model.
+
+```python
+# Membuat variabel x untuk mencocokkan data user dan anime menjadi satu value
+x = df_collab[['user', 'anime']].values
+
+# Mengatur nilai minimum dan maksimum rating
+min_rating = df_collab['rating'].min()
+max_rating = df_collab['rating'].max()
+
+# Membuat variabel y sebagai target rating dalam skala 0–1
+y = df_collab['rating'].apply(lambda x: (x - min_rating) / (max_rating - min_rating)).values
+```
+
+#### Pembagian Data Training dan Validasi
+Setelah data input dan target terbentuk, proses selanjutnya adalah membagi data menjadi **80% untuk pelatihan (training set)** dan **20% untuk validasi (validation set)**. Validasi dilakukan untuk mengevaluasi performa model terhadap data yang tidak dilatih secara langsung.
+
+```python
+# Menentukan indeks pemisah antara data training dan validasi
+train_indices = int(0.8 * df_collab.shape[0])
+
+# Membagi data menjadi train dan validation
+x_train, x_val = x[:train_indices], x[train_indices:]
+y_train, y_val = y[:train_indices], y[train_indices:]
+```
+
+Hasil dari proses ini adalah dua pasang dataset:
+
+- `x_train` dan `y_train` digunakan untuk pelatihan model.
+
+- `x_val` dan `y_val` digunakan untuk validasi model.
+
+Dengan proses ini, data telah siap untuk digunakan dalam pelatihan model Collaborative Filtering yang akan dibahas pada tahap Modeling.
+## Modeling 
+Permasalahan utama dalam penelitian ini adalah membantu pengguna menemukan anime yang relevan berdasarkan preferensi mereka. Untuk menyelesaikan permasalahan tersebut, sistem rekomendasi dikembangkan menggunakan dua pendekatan utama:
+
+- Content-Based Filtering: Menganalisis kesamaan konten antar anime berdasarkan fitur genre.
+
+- Collaborative Filtering: Memprediksi minat pengguna berdasarkan pola interaksi pengguna lain dengan anime.
+
+Dengan dua pendekatan ini, sistem mampu merekomendasikan top-N anime kepada pengguna baik yang baru maupun yang sudah memiliki histori interaksi (cold-start dan warm-start problem).
+
+### Content-Based Filtering dengan Cosine Similarity
+Setelah membentuk matriks TF-IDF, sistem menghitung kemiripan antar anime menggunakan Cosine Similarity. Cosine Similarity merupakan metode yang umum digunakan dalam sistem rekomendasi berbasis konten karena mampu mengukur seberapa mirip dua vektor (dalam ruang fitur) berdasarkan arah atau sudut antar vektor, bukan berdasarkan besar nilainya. Nilai cosine similarity berkisar antara 0 (tidak mirip sama sekali) hingga 1 (sangat mirip atau identik).
+
+Dalam implementasi ini, digunakan fungsi cosine_similarity dari library sklearn.
+ 
+```python
+from sklearn.metrics.pairwise import cosine_similarity
+
+cosine_sim = cosine_similarity(tf_matrix_content_based)
+```
+
+Berikut ini adalah sebagian dari hasil matriks cosine similarity dalam bentuk array:
+
+```python
+array([[1.        , 0.02228665, 0.04886245, ..., 0.        , 0.09304222,
+        0.09304222],
+       [0.02228665, 1.        , 0.02139413, ..., 0.04750064, 0.        ,
+        0.        ],
+       [0.04886245, 0.02139413, 1.        , ..., 0.        , 0.        ,
+        0.        ],
+       ...,
+       [0.        , 0.04750064, 0.        , ..., 1.        , 0.        ,
+        0.        ],
+       [0.09304222, 0.        , 0.        , ..., 0.        , 1.        ,
+        1.        ],
+       [0.09304222, 0.        , 0.        , ..., 0.        , 1.        ,
+        1.        ]])
+```
+
+Setelah berhasil membangun matriks kesamaan antar anime berdasarkan genre menggunakan metode Cosine Similarity, langkah selanjutnya adalah membuat fungsi untuk memberikan rekomendasi. Fungsi ini dikembangkan untuk menerima input berupa nama anime, kemudian mengembalikan top-N rekomendasi berdasarkan nilai kemiripan tertinggi dalam matriks cosine similarity.
+
+```python
+def anime_recommendations(nama_anime, similarity_data=cosine_sim_df, items=df_content_based[['name', 'genre']], k=10) -> pd.DataFrame:
+    index = similarity_data.loc[:, nama_anime].to_numpy().argpartition(
+        range(-1, -k, -1))
+
+    closest = similarity_data.columns[index[-1:-(k+2):-1]]
+    closest = closest.drop(nama_anime, errors='ignore')
+
+    recommendations = pd.DataFrame(closest).merge(items).head(k)
+
+    pd.set_option('display.max_colwidth', None)
+
+    return recommendations
+```
+Untuk memastikan sistem rekomendasi bekerja dengan baik, dilakukan pengujian menggunakan anime populer, yaitu Naruto, sebagai referensi. Langkah pertama yang dilakukan untuk pengujian sistem rekomendasi adalah Menampilkan Data Genre Naruto.
+
+```python
+df_content_based[df_content_based.name.eq("Naruto")]
+```
+| user_id | anime_id | rating | name   | genre                                                           | type | episodes | official_rating | members |
+|---------|----------|--------|--------|------------------------------------------------------------------|------|----------|------------------|---------|
+| 25      | 3        | 20     | Naruto | Action, Comedy, Martial Arts, Shounen, Super Power              | TV   | 220      | 7.81             | 683297  |
+
+Dari hasil tersebut, diketahui bahwa Naruto memiliki genre sebagai berikut:
+
+**Action**, **Comedy**, **Martial Arts**, **Shounen**, dan **Super Power**.
+
+Genre ini menjadi dasar bagi sistem untuk mencari anime dengan konten yang mirip.
+
+Langkah selanjutnya adalah menjalankan fungsi rekomendasi dengan menjalankan code seperti berikut untuk menampilkan hasil rekomendasi yang relevan dengan anime naruto.
+```python
+anime_recommendations('Naruto')
+```
+| name                                                                                      | genre                                              |
+|-------------------------------------------------------------------------------------------|----------------------------------------------------|
+| Naruto x UT                                                                               | Action, Comedy, Martial Arts, Shounen, Super Power |
+| Boruto: Naruto the Movie - Naruto ga Hokage ni Natta Hi                                   | Action, Comedy, Martial Arts, Shounen, Super Power |
+| Naruto: Shippuuden Movie 3 - Hi no Ishi wo Tsugu Mono                                     | Action, Comedy, Martial Arts, Shounen, Super Power |
+| Naruto Shippuuden: Sunny Side Battle                                                      | Action, Comedy, Martial Arts, Shounen, Super Power |
+| Boruto: Naruto the Movie                                                                  | Action, Comedy, Martial Arts, Shounen, Super Power |
+| Naruto Soyokazeden Movie: Naruto to Mashin to Mitsu no Onegai Dattebayo!!                 | Action, Comedy, Martial Arts, Shounen, Super Power |
+| Naruto: Shippuuden Movie 4 - The Lost Tower                                               | Action, Comedy, Martial Arts, Shounen, Super Power |
+| Battle Spirits: Ryuuko no Ken                                                             | Action, Comedy, Martial Arts, Shounen              |
+| Kyutai Panic Adventure!                                                                   | Action, Martial Arts, Shounen, Super Power         |
+| Ben-To                                                                                    | Action, Comedy, Martial Arts                       |
+
+Dari hasil yang ditampilkan menunjukkan beberapa judul anime yang memiliki genre serupa dengan Naruto. Ini mengindikasikan bahwa sistem rekomendasi telah berhasil bekerja dengan baik. Judul-judul yang muncul dalam daftar rekomendasi umumnya juga bergenre Action, Shounen, atau Martial Arts, yang merupakan ciri khas dari anime Naruto itu sendiri.
 
 ## Evaluation
