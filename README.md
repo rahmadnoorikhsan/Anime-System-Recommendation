@@ -132,7 +132,7 @@ Dataset `ratings` berisi informasi mengenai interaksi pengguna terhadap judul an
 | 9        | 241       | 5.0    |
 
 
-###### Temuan :
+##### Temuan :
 - **Missing Values**: Tidak ditemukan missing values secara eksplisit dalam dataset ini. Namun, perlu dicatat bahwa nilai -1 dalam kolom rating merepresentasikan ketidakhadiran rating dari pengguna, dan dapat diperlakukan sebagai missing value tergantung pada konteks analisis.
 
 - **Duplikat**: Ditemukan 1 entri duplikat dalam dataset ini. Duplikat ini dapat mengganggu akurasi analisis dan model rekomendasi, sehingga sebaiknya dihapus atau dikonsolidasikan.
