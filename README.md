@@ -703,9 +703,9 @@ $$
 
 **Penjelasan:**
 
-- \( \hat{r}_i \): Rating yang diprediksi oleh model.
-- \( r_i \): Rating aktual dari pengguna.
-- \( N \): Jumlah total prediksi yang dievaluasi.
+- $$\( \hat{r}_i \)$$: Rating yang diprediksi oleh model.
+- $$\( r_i \)$$: Rating aktual dari pengguna.
+- $$\( N \)$$: Jumlah total prediksi yang dievaluasi.
 
 Berikut ini merupakan hasil training yang divisualisasikan pada grafik berikut:
 
