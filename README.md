@@ -56,16 +56,13 @@ Exploratory Data Analysis atau sering disingkat EDA merupakan proses investigasi
 
 #### Analisis Dataset `animes`
 Dataset `animes` merupakan kumpulan data yang menyajikan informasi mendetail mengenai berbagai judul anime yang tersedia dalam sistem.
-| anime\_id | name                                                      | genre                                                        | type  | episodes | rating | members |
-| --------- | --------------------------------------------------------- | ------------------------------------------------------------ | ----- | -------- | ------ | ------- |
-| 32281     | Kimi no Na wa.                                            | Drama, Romance, School, Supernatural                         | Movie | 1        | 9.37   | 200630  |
-| 5114      | Fullmetal Alchemist: Brotherhood                          | Action, Adventure, Drama, Fantasy, Magic, Military, Shounen  | TV    | 64       | 9.26   | 793665  |
-| 32935     | Haikyuu!!: Karasuno Koukou VS Shiratorizawa Gakuen Koukou | Comedy, Drama, School, Shounen, Sports                       | TV    | 10       | 9.15   | 93351   |
-| 11061     | Hunter x Hunter (2011)                                    | Action, Adventure, Shounen, Super Power                      | TV    | 148      | 9.13   | 425855  |
-| 820       | Ginga Eiyuu Densetsu                                      | Drama, Military, Sci-Fi, Space                               | OVA   | 110      | 9.11   | 80679   |
 
-Dataset `animes` terdiri dari **12.294 baris data** dan memiliki **7 kolom**. Setiap baris merepresentasikan satu judul anime, lengkap dengan berbagai atribut informatif. Berikut ini adalah penjelasan masing-masing kolom yang terdapat dalam dataset:
+##### Struktur Dataset :
+- **Jumlah entri**: 12.294 baris
+- **Jumlah Kolom**: 7 kolom
+- **Jumlah anime unik**: 12.294 anime
 
+##### Struktur Kolom :
 - **anime_id** : Merupakan ID unik yang mengidentifikasi setiap judul anime secara individual.
 
 - **name** : Nama atau judul dari anime.
@@ -80,6 +77,28 @@ Dataset `animes` terdiri dari **12.294 baris data** dan memiliki **7 kolom**. Se
 
 - **members** : Jumlah pengguna yang telah menambahkan anime ini ke daftar mereka (watchlist, watching, completed, dll).
 
+
+##### Contoh Data :
+| anime\_id | name                                                      | genre                                                        | type  | episodes | rating | members |
+| --------- | --------------------------------------------------------- | ------------------------------------------------------------ | ----- | -------- | ------ | ------- |
+| 32281     | Kimi no Na wa.                                            | Drama, Romance, School, Supernatural                         | Movie | 1        | 9.37   | 200630  |
+| 5114      | Fullmetal Alchemist: Brotherhood                          | Action, Adventure, Drama, Fantasy, Magic, Military, Shounen  | TV    | 64       | 9.26   | 793665  |
+| 32935     | Haikyuu!!: Karasuno Koukou VS Shiratorizawa Gakuen Koukou | Comedy, Drama, School, Shounen, Sports                       | TV    | 10       | 9.15   | 93351   |
+| 11061     | Hunter x Hunter (2011)                                    | Action, Adventure, Shounen, Super Power                      | TV    | 148      | 9.13   | 425855  |
+| 820       | Ginga Eiyuu Densetsu                                      | Drama, Military, Sci-Fi, Space                               | OVA   | 110      | 9.11   | 80679   |
+
+
+##### Temuan :
+- **Missing Values**: Ditemukan beberapa nilai yang hilang (missing values) pada kolom-kolom berikut:
+
+  - `genre`: **62 missing values**
+
+  - `type`: **25 missing values**
+
+  - `rating`: **230 missing values**
+
+- **Duplikat** : Tidak ditemukan data duplikat dalam dataset ini. Setiap anime memiliki ID unik dan tidak ada entri yang identik secara keseluruhan.
+
 #### Visualisasi Distribusi Genre
 Untuk memahami lebih dalam seberapa sering masing-masing genre muncul dalam dataset, dilakukan visualisasi distribusi genre. Visualisasi ini memberikan gambaran yang lebih intuitif mengenai genre-genre yang mendominasi serta membantu dalam mengidentifikasi pola umum dalam data.
 
@@ -90,6 +109,20 @@ Distribusi genre dalam dataset `animes` menunjukkan bahwa **Comedy** merupakan g
 #### Analisis Dataset `ratings`
 Dataset `ratings` berisi informasi mengenai interaksi pengguna terhadap judul anime tertentu dalam bentuk penilaian (rating). Data ini penting dalam membangun sistem rekomendasi berbasis collaborative filtering, karena merepresentasikan preferensi individual setiap pengguna terhadap anime yang telah mereka tonton.
 
+##### Struktur Dataset :
+- **Jumlah entri**: 7.813.737 baris
+- **Jumlah kolom**: 3 kolom
+- **Jumlah pengguna unik**: 73.515 user
+
+##### Struktur Kolom :
+- **user_id**: Merupakan ID unik dari masing-masing pengguna yang melakukan penilaian terhadap anime.
+
+- **anime_id**: Merupakan ID dari judul anime yang diberi penilaian. ID ini merujuk pada data yang ada di dataset animes.
+
+- **rating**: Nilai yang diberikan pengguna terhadap anime. Skor berkisar antara 1 hingga 10, dengan nilai -1 menandakan bahwa pengguna telah menonton anime tersebut namun tidak memberikan penilaian (missing rating).
+
+##### Contoh Data :
+
 | user\_id | anime\_id | rating |
 | -------- | --------- | ------ |
 | 1        | 20        | 9.0    |
@@ -98,13 +131,11 @@ Dataset `ratings` berisi informasi mengenai interaksi pengguna terhadap judul an
 | 8        | 226       | 5.0    |
 | 9        | 241       | 5.0    |
 
-Dataset ini terdiri dari lebih dari **7 juta entri**, dengan total **73.515 pengguna unik**. Jumlah data yang besar ini menjadi potensi besar untuk mengeksplorasi hubungan antar pengguna dan preferensi mereka terhadap berbagai genre atau judul anime tertentu. Berikut ini adalah penjelasan masing-masing kolom yang terdapat dalam dataset:
 
-- **user_id**: Merupakan ID unik dari masing-masing pengguna yang melakukan penilaian terhadap anime.
+###### Temuan :
+- **Missing Values**: Tidak ditemukan missing values secara eksplisit dalam dataset ini. Namun, perlu dicatat bahwa nilai -1 dalam kolom rating merepresentasikan ketidakhadiran rating dari pengguna, dan dapat diperlakukan sebagai missing value tergantung pada konteks analisis.
 
-- **anime_id**: Merupakan ID dari judul anime yang diberi penilaian. ID ini merujuk pada data yang ada di dataset animes.
-
-- **rating**: Nilai yang diberikan pengguna terhadap anime. Skor berkisar antara 1 hingga 10, dengan nilai -1 menandakan bahwa pengguna telah menonton anime tersebut namun tidak memberikan penilaian (missing rating).
+- **Duplikat**: Ditemukan 1 entri duplikat dalam dataset ini. Duplikat ini dapat mengganggu akurasi analisis dan model rekomendasi, sehingga sebaiknya dihapus atau dikonsolidasikan.
 
 #### Visualisasi Distribusi Rating
 Distribusi  rating menggambarkan seberapa aktif setiap pengguna dalam memberikan penilaian terhadap anime. Analisis ini penting untuk memahami pola interaksi pengguna dengan dataset dan memastikan model rekomendasi dapat bekerja efektif dengan memperhatikan perilaku pengguna.
@@ -649,6 +680,14 @@ Hasil evaluasi Top-10 rekomendasi terhadap pengguna yang menyukai anime Naruto a
 
 - **NDCG@10 sebesar 80%** menjadi bukti bahwa sistem tidak hanya memberikan anime yang relevan, namun juga mengurutkannya secara optimal. Ini penting karena pengguna cenderung melihat rekomendasi pada posisi atas terlebih dahulu.
 
+#### Dampak terhadap Business Understanding:
+
+- Model ini berhasil menjawab **Problem Statement Pertama**, karena mampu memberikan rekomendasi yang relevan berdasarkan kemiripan konten, dan sesuai dengan pola kesukaan pengguna terhadap anime tertentu seperti Naruto.
+
+- **Goal Membangun model rekomendasi yang mampu mengenali pola kesukaan pengguna berdasarkan anime yang mirip dengan tontonan sebelumnya** Terpenuhi melalui Content-Based Filtering yang secara efektif memanfaatkan fitur konten seperti genre dan tema.
+
+- **Solution Statement dengan model Content-based filtering berdampak** langsung pada peningkatan kepuasan pengguna karena mereka mendapatkan rekomendasi personal yang sesuai minatnya.
+
 ### Collaborative Filtering
 Pada tahap ini, dilakukan evaluasi untuk mengukur performa sistem rekomendasi berbasis Collaborative Filtering. Berbeda dengan pendekatan Content-Based Filtering yang mengandalkan kemiripan fitur antar item, Collaborative Filtering memanfaatkan pola interaksi antar pengguna untuk memberikan rekomendasi.
 
@@ -664,9 +703,9 @@ $$
 
 **Penjelasan:**
 
-- $$\( \hat{r}_i \)$$: Rating yang diprediksi oleh model.
-- $$\( r_i \)$$: Rating aktual dari pengguna.
-- $$\( N \)$$: Jumlah total prediksi yang dievaluasi.
+- \( \hat{r}_i \): Rating yang diprediksi oleh model.
+- \( r_i \): Rating aktual dari pengguna.
+- \( N \): Jumlah total prediksi yang dievaluasi.
 
 Berikut ini merupakan hasil training yang divisualisasikan pada grafik berikut:
 
@@ -678,6 +717,20 @@ Dari grafik tersebut, dapat disimpulkan bahwa model menunjukkan konvergensi yang
 - **RMSE pada data validasi** stabil di kisaran **0.133**.
 
 Nilai yang rendah dan stabil ini menunjukkan bahwa model memiliki tingkat generalisasi yang baik serta tidak mengalami overfitting secara signifikan. Dengan demikian, sistem rekomendasi berbasis Collaborative Filtering yang dibangun mampu memberikan prediksi rating yang cukup akurat untuk digunakan dalam menyusun rekomendasi bagi pengguna.
+
+#### Dampak terhadap Business Understanding:
+- Model Collaborative Filtering ini **berhasil menjawab Problem Statement Kedua**, karena mampu membangun pemahaman terhadap perilaku pengguna secara kolektif dan menghasilkan rekomendasi yang tetap relevan meskipun pengguna belum pernah menonton anime tertentu sebelumnya.
+- **Goals Mengembangkan model machine learning yang dapat beradaptasi dan terus memperbaiki rekomendasinya seiring waktu dan perubahan selera pengguna** telah terpenuhi melalui Collaborative Filtering berbasis deep learning yang mempelajari interaksi antar pengguna dan dapat diperbarui secara berkala untuk menyesuaikan tren selera.
+- **Solution statement dengan model Collaborative Filtering** memberikan dampak nyata dalam meningkatkan efektivitas personalisasi dan memperluas eksplorasi pengguna terhadap anime lain yang belum pernah mereka temui, meskipun berbeda genre.
+
+### Kesimpulan dan Relevansi terhadap Tujuan Bisnis
+Baik Content-Based Filtering maupun Collaborative Filtering telah berhasil menjawab seluruh problem statement yang diajukan di awal proyek. Setiap model memiliki kekuatan yang saling melengkapi:
+
+- Content-Based unggul dalam memahami fitur dan preferensi eksplisit pengguna.
+
+- Collaborative Filtering unggul dalam menangkap pola kolektif antar pengguna.
+
+Gabungan keduanya dapat digunakan dalam strategi hybrid recommendation system untuk memaksimalkan performa sistem secara menyeluruh, sehingga selaras dengan tujuan bisnis untuk meningkatkan retensi pengguna, interaksi terhadap konten, dan kepuasan penggunaan aplikasi secara keseluruhan.
 
 ## Referensi
 - Statista. (2021). Anime market size in Japan from 2002 to 2021. Retrieved from https://www.statista.com/statistics/1109105/japan-anime-market-size
